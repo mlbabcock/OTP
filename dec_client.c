@@ -40,20 +40,19 @@ int main(int argc, char *argv[]) {
         perror("Error opening key file");
         return 1;
     }
-    char plaintext[512] = {0};                                                             // Initialize with zeros
-    if (fgets(plaintext, sizeof(plaintext), plaintext_file) == NULL) {
-        perror("Error reading plaintext");
-        fclose(plaintext_file);
+    char key[512];
+    if (fgets(key, sizeof(key), key_file) == NULL) {
+        perror("Error reading key");
+        fclose(key_file);
         return 1;
     }
 
-    // Remove newline characters at the end of the plaintext if present
-    size_t plaintext_length = strlen(plaintext);
-    if (plaintext_length > 0 && plaintext[plaintext_length - 1] == '\n') {
-        plaintext[plaintext_length - 1] = '\0';
+    // Remove newline characters at the end of the key if present
+    size_t key_length = strlen(key);
+    if (key_length > 0 && key[key_length - 1] == '\n') {
+        key[key_length - 1] = '\0';
     }
-
-fclose(plaintext_file);
+    fclose(key_file);
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);                                             // Create socket
     if (sockfd == -1) {
