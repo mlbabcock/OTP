@@ -19,7 +19,7 @@ void performEncryption(char *plaintext, char *key, char *ciphertext) {
         } else {
             int plaintext_val = plaintext_char - 'A';                           // Convert to 0-25 range
             int key_val = key_char - 'A';                                       
-            int encrypted_val = (plaintext_val + key_val) % 28;
+            int encrypted_val = (plaintext_val + key_val) % 27;
             ciphertext[i] = encrypted_val + 'A';                                // Convert back to ASCII range
         }
     }
@@ -101,4 +101,3 @@ int main(int argc, char *argv[]) {
     close(sockfd);
     return 0;
 }
-
