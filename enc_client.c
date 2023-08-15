@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     char plaintext[512];
-    if (fgets(plaintext, sizeof(plaintext), plaintext_file) == NULL) {
+    if (fscanf(plaintext_file, "%s", plaintext) != 1) {
         perror("Error reading plaintext");
         fclose(plaintext_file);
         return 1;
@@ -40,6 +40,13 @@ int main(int argc, char *argv[]) {
         fclose(key_file);
         return 1;
     }
+
+    // Remove newline characters at the end of the key if present
+    size_t key_length = strlen(key);
+    if (key_length > 0 && key[key_length - 1] == '\n') {
+        key[key_length - 1] = '\0';
+    }
+
     fclose(key_file);
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -80,4 +87,3 @@ int main(int argc, char *argv[]) {
     close(sockfd);
     return 0;
 }
-
