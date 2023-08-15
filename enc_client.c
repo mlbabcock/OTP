@@ -1,89 +1,92 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s plaintext key port\n", argv[0]);
-        return 1;
-    }
+  if (argc != 3) {
+    fprintf(stderr, "Usage: enc_client plaintext key port\n");
+    exit(1);
+  }
 
-    char *plaintext_filename = argv[1];
-    char *key_filename = argv[2];
-    int port = atoi(argv[3]);
+  char *plaintext_file_name = argv[1];
+  char *key_file_name = argv[2];
+  int port_number = atoi(argv[3]);
+  FILE *plaintext_file = fopen(plaintext_file_name, "r");
+  if (plaintext_file == NULL) {
+    fprintf(stderr, "Could not open plaintext file: %s\n", plaintext_file_name);
+    exit(1);
+  }
 
-    FILE *plaintext_file = fopen(plaintext_filename, "r");
-    if (!plaintext_file) {
-        perror("Error opening plaintext file");
-        return 1;
-    }
-    char plaintext[512];
-    if (fscanf(plaintext_file, "%s", plaintext) != 1) {
-        perror("Error reading plaintext");
-        fclose(plaintext_file);
-        return 1;
-    }
-    fclose(plaintext_file);
+  FILE *key_file = fopen(key_file_name, "r");
+  if (key_file == NULL) {
+    fprintf(stderr, "Could not open key file: %s\n", key_file_name);
+    exit(1);
+  }
 
-    FILE *key_file = fopen(key_filename, "r");
-    if (!key_file) {
-        perror("Error opening key file");
-        return 1;
-    }
-    char key[512];
-    if (fgets(key, sizeof(key), key_file) == NULL) {
-        perror("Error reading key");
-        fclose(key_file);
-        return 1;
-    }
+  char plaintext[1024];
+  int plaintext_length = fread(plaintext, 1, sizeof(plaintext), plaintext_file);
+  if (plaintext_length == -1) {
+    perror("fread");
+    exit(1);
+  }
+  plaintext_file.close();
 
-    // Remove newline characters at the end of the key if present
-    size_t key_length = strlen(key);
-    if (key_length > 0 && key[key_length - 1] == '\n') {
-        key[key_length - 1] = '\0';
-    }
+  char key[1024];
+  int key_length = fread(key, 1, sizeof(key), key_file);
+  if (key_length == -1) {
+    perror("fread");
+    exit(1);
+  }
+  key_file.close();
 
-    fclose(key_file);
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        perror("Error creating socket");
-        return 1;
-    }
+  if (key_length < plaintext_length) {
+    fprintf(stderr, "Key is too short: %d < %d\n", key_length, plaintext_length);
+    exit(1);
+  }
 
-    struct hostent *server = gethostbyname("localhost");
-    if (server == NULL) {
-        perror("Error resolving hostname");
-        return 1;
-    }
+  struct sockaddr_in address;
+  memset(&address, 0, sizeof(address));
+  address.sin_family = AF_INET;
+  address.sin_port = htons(port_number);
+  address.sin_addr.s_addr = INADDR_ANY;
+  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_fd == -1) {
+    perror("socket");
+    exit(1);
+  }
 
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+  int connect_result = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
+  if (connect_result == -1) {
+    if (errno == ECONNREFUSED) {
+      fprintf(stderr, "Could not connect to enc_server on port %d\n", port_number);
+      exit(2);
+    } else {
+      perror("connect");
+      exit(1);
+    }
+  }
 
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {          // Connect to the server
-        perror("Error connecting to server");
-        return 2;
-    }
+  int bytes_sent = send(socket_fd, plaintext, plaintext_length, 0);
+  if (bytes_sent == -1) {
+    perror("send");
+    exit(1);
+  }
+  bytes_sent = send(socket_fd, key, key_length, 0);
+  if (bytes_sent == -1) {
+    perror("send");
+    exit(1);
+  }
 
-    if (send(sockfd, plaintext, strlen(plaintext), 0) == -1 ||                                  // Send plaintext and key to server
-        send(sockfd, key, strlen(key), 0) == -1) {
-        perror("Error sending data to server");
-        close(sockfd);
-        return 1;
-    }
-    char ciphertext[512];                                                                       // Receive ciphertext from server
-    ssize_t ciphertext_len = recv(sockfd, ciphertext, sizeof(ciphertext), 0);
-    if (ciphertext_len == -1) {
-        perror("Error receiving ciphertext");
-        close(sockfd);
-        return 1;
-    }
-    fwrite(ciphertext, sizeof(char), ciphertext_len, stdout);
-    close(sockfd);
-    return 0;
+  char ciphertext[1024];
+  int bytes_received = recv(socket_fd, ciphertext, sizeof(ciphertext), 0);
+  if (bytes_received == -1) {
+    perror("recv");
+    exit(1);
+  }
+  close(socket
 }
