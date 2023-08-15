@@ -25,6 +25,7 @@ int main() {
   printf("Enter the plaintext: ");
   fgets(plaintext, 1024, stdin);
   plaintext_length = strlen(plaintext);
+
   key = malloc(1024 * sizeof(char));
   printf("Enter the key: ");
   fgets(key, 1024, stdin);
@@ -35,6 +36,7 @@ int main() {
     perror("socket");
     exit(1);
   }
+
   address.sin_family = AF_INET;
   address.sin_port = htons(57171);
   address.sin_addr.s_addr = INADDR_ANY;
@@ -59,7 +61,6 @@ int main() {
     perror("recv");
     exit(1);
   }
-
   close(socket_fd);
   printf("The ciphertext is: %s\n", ciphertext);
 
