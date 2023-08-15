@@ -27,6 +27,12 @@ int main(int argc, char *argv[]) {
         fclose(ciphertext_file);
         return 1;
     }
+
+    // Remove newline characters at the end of the ciphertext if present
+    size_t ciphertext_length = strlen(ciphertext);
+    if (ciphertext_length > 0 && ciphertext[ciphertext_length - 1] == '\n') {
+        ciphertext[ciphertext_length - 1] = '\0';
+    }
     fclose(ciphertext_file);
 
     FILE *key_file = fopen(key_filename, "r");                                              // Read key from file
@@ -34,13 +40,20 @@ int main(int argc, char *argv[]) {
         perror("Error opening key file");
         return 1;
     }
-    char key[512];
-    if (fgets(key, sizeof(key), key_file) == NULL) {
-        perror("Error reading key");
-        fclose(key_file);
+    char plaintext[512] = {0};                                                             // Initialize with zeros
+    if (fgets(plaintext, sizeof(plaintext), plaintext_file) == NULL) {
+        perror("Error reading plaintext");
+        fclose(plaintext_file);
         return 1;
     }
-    fclose(key_file);
+
+    // Remove newline characters at the end of the plaintext if present
+    size_t plaintext_length = strlen(plaintext);
+    if (plaintext_length > 0 && plaintext[plaintext_length - 1] == '\n') {
+        plaintext[plaintext_length - 1] = '\0';
+    }
+
+fclose(plaintext_file);
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);                                             // Create socket
     if (sockfd == -1) {
@@ -84,4 +97,3 @@ int main(int argc, char *argv[]) {
     close(sockfd);
     return 0;
 }
-
