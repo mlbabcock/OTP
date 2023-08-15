@@ -1,28 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-
-/* Function to generate a random character from the allowed set */
-char getRandomCharacter() {
-    const char allowed_characters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
-    int num_characters = sizeof(allowed_characters) - 1; // Exclude null terminator
-    return allowed_characters[rand() % num_characters];
-}
+#include <unistd.h>
+#include <string.h>
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s keylength\n", argv[0]);
-        return 1;
-    }
+  if (argc != 2) {
+    fprintf(stderr, "Usage: keygen keylength\n");
+    exit(1);
+  }
 
-    int key_length = atoi(argv[1]);
-    srand(time(NULL));  // Seed the random number generator
-
-    for (int i = 0; i < key_length; i++) {  // Generate and output the key
-        char random_char = getRandomCharacter();
-        putchar(random_char);
-    }
-
-    putchar('\n');  // Output a newline at the end
-    return 0;
+  int key_length = atoi(argv[1]);
+  char key[key_length + 1];
+  for (int i = 0; i < key_length; i++) {
+    key[i] = 65 + rand() % 27;
+  }
+  key[key_length] = '\n';
+  printf("%s", key);
+  return 0;
 }
