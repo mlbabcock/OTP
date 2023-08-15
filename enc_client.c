@@ -19,25 +19,7 @@ int main() {
   int bytes_sent;
   int bytes_received;
 
-  socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (socket_fd == -1) {
-    /* The socket() system call failed */
-    char *error_message = strerror(errno);
-    fprintf(stderr, "Error creating socket: %s\n", error_message);
-    exit(1);
-  }
-
   struct sockaddr_in address;
-  address.sin_family = AF_INET;
-  address.sin_port = htons(57171);
-  address.sin_addr.s_addr = INADDR_ANY;
-
-  int connect_result = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
-  if (connect_result == -1) {
-    char *error_message = strerror(errno);
-    fprintf(stderr, "Error connecting to enc_server: %s\n", error_message);
-    exit(1);
-  }
 
   plaintext = malloc(1024 * sizeof(char));
   printf("Enter the plaintext: ");
@@ -47,27 +29,34 @@ int main() {
   printf("Enter the key: ");
   fgets(key, 1024, stdin);
   key_length = strlen(key);
-
-
+  
+  socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_fd == -1) {
+    perror("socket");
+    exit(1);
+  }
+  address.sin_family = AF_INET;
+  address.sin_port = htons(57171);
+  address.sin_addr.s_addr = INADDR_ANY;
+  int connect_result = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
+  if (connect_result == -1) {
+    perror("connect");
+    exit(1);
+  }
   bytes_sent = send(socket_fd, plaintext, plaintext_length, 0);
   if (bytes_sent == -1) {
-    char *error_message = strerror(errno);
-    fprintf(stderr, "Error sending plaintext to enc_server: %s\n", error_message);
+    perror("send");
     exit(1);
   }
-  
   bytes_sent = send(socket_fd, key, key_length, 0);
   if (bytes_sent == -1) {
-    char *error_message = strerror(errno);
-    fprintf(stderr, "Error sending key to enc_server: %s\n", error_message);
+    perror("send");
     exit(1);
   }
-
   ciphertext = malloc(1024 * sizeof(char));
-  bytes_received = recv(socket_fd, ciphertext, sizeof(ciphertext), 0);
+  bytes_received = recv(socket_fd, ciphertext, 1024, 0);
   if (bytes_received == -1) {
-    char *error_message = strerror(errno);
-    fprintf(stderr, "Error receiving ciphertext from enc_server: %s\n", error_message);
+    perror("recv");
     exit(1);
   }
 
