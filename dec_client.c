@@ -3,8 +3,19 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <ctype.h>
+
+#define MAX 9000000
+
+void error(const char *message){
+    perror(message);
+    exit(1);
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
