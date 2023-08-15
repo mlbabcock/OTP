@@ -16,13 +16,13 @@ int main(int argc, char *argv[]) {
     }
 
     int key_length = atoi(argv[1]);
-    srand(time(NULL));                                          // Seed the random number generator
+    srand(time(NULL));  // Seed the random number generator
 
-    for (int i = 0; i < key_length; i++) {
+    for (int i = 0; i < key_length; i++) {  // Generate and output the key
         char random_char = getRandomCharacter();
         putchar(random_char);
     }
 
-    putchar('\n');                                              // Output a newline at the end
+    putchar('\n');  // Output a newline at the end
     return 0;
 }
