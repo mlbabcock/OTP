@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <sys/socket.h>
 
 int main(int argc, char *argv[]) {
   if (argc != 3) {
@@ -34,7 +35,7 @@ int main(int argc, char *argv[]) {
     perror("fread");
     exit(1);
   }
-  plaintext_file.close();
+  fclose(plaintext_file);
 
   char key[1024];
   int key_length = fread(key, 1, sizeof(key), key_file);
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     perror("fread");
     exit(1);
   }
-  key_file.close();
+  fclose(key_file);
 
   if (key_length < plaintext_length) {
     fprintf(stderr, "Key is too short: %d < %d\n", key_length, plaintext_length);
@@ -88,5 +89,5 @@ int main(int argc, char *argv[]) {
     perror("recv");
     exit(1);
   }
-  close(socket
+  close(socket_fd);
 }
