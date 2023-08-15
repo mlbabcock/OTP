@@ -62,10 +62,10 @@ int main(int argc, char *argv[]) {
   }
 
   int connect_result = connect(socket_fd, (struct sockaddr *)&address, sizeof(address));
-  if (connect_result == -1) {
-    if (errno == ECONNREFUSED) {
-      fprintf(stderr, "Could not connect to enc_server on port %d\n", port_number);
-      exit(2);
+    if (connect_result == -1) {
+      char *error_message = strerror(errno);
+      fprintf(stderr, "Error connecting to enc_server: %s\n", error_message);
+      exit(1);
     } else {
       perror("connect");
       exit(1);
