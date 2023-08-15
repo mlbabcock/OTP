@@ -60,6 +60,9 @@ int main() {
     perror("recv");
     exit(1);
   }
+  printf("The plaintext is: ");
+  fwrite(plaintext, 1, bytes_received, stdout); 
+	
   close(socket_fd);
 	
   FILE *fp = fopen("plaintext1_a", "w");
