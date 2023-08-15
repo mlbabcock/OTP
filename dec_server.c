@@ -59,9 +59,11 @@ int main(int argc, char *argv[]) {
         plaintext[i] = ciphertext[i] ^ key[i];
       }
 
+      int bytes_sent;
       bytes_sent = send(client_fd, plaintext, sizeof(plaintext), 0);
       if (bytes_sent == -1) {
-        perror("send");
+        char *error_message = strerror(errno);
+        fprintf(stderr, "Error sending plaintext to client: %s\n", error_message);
         exit(1);
       }
       close(client_fd);
