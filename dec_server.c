@@ -12,6 +12,7 @@ void performDecryption(char *ciphertext, char *key, char *plaintext) {
 
     for (int i = 0; i < ciphertext_length; i++) {
         char ciphertext_char = ciphertext[i];
+
         char key_char = key[i % key_length];                                           // Repeating key
 
         if (ciphertext_char == ' ') {
@@ -105,4 +106,3 @@ int main(int argc, char *argv[]) {
     close(sockfd);
     return 0;
 }
-
