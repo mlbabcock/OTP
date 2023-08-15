@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     perror("fread");
     exit(1);
   }
-  ciphertext_file->close();
+	((FILE *)ciphertext_file)->close();
 
   char key[1024];
   int key_length = fread(key, 1, sizeof(key), key_file);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     perror("fread");
     exit(1);
   }
-  key_file->close();
+	((FILE *)key_file)->close();
 
   struct sockaddr_in address;
   memset(&address, 0, sizeof(address));
