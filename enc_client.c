@@ -30,7 +30,7 @@ int main() {
   printf("Enter the key: ");
   fgets(key, 1024, stdin);
   key_length = strlen(key);
-  
+
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
     perror("socket");
@@ -62,7 +62,8 @@ int main() {
     exit(1);
   }
   close(socket_fd);
-  printf("The ciphertext is: %s\n", ciphertext);
+  printf("The ciphertext is: ");
+  fwrite(ciphertext, 1, bytes_received, stdout);  // Print ciphertext without newline
 
   free(plaintext);
   free(key);
