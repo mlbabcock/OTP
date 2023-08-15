@@ -1,103 +1,95 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
-/* Function to perform encryption based on given key and plaintext */
-void performEncryption(char *plaintext, char *key, char *ciphertext) {
-    int plaintext_length = strlen(plaintext);
-    int key_length = strlen(key);
-
-    for (int i = 0; i < plaintext_length; i++) {
-        char plaintext_char = plaintext[i];
-        char key_char = key[i % key_length];                                    // Repeating key
-
-        if (plaintext_char == ' ') {
-            ciphertext[i] = ' ';
-        } else {
-            int plaintext_val = plaintext_char - 'A';                           // Convert to 0-25 range
-            int key_val = key_char - 'A';                                       
-            int encrypted_val = (plaintext_val + key_val) % 27;
-            ciphertext[i] = encrypted_val + 'A';                                // Convert back to ASCII range
-        }
-    }
-    ciphertext[plaintext_length] = '\0';                                        // Null-terminate the ciphertext
-}
-
+#define MAX_CONNECTIONS 5
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s listening_port\n", argv[0]);
-        return 1;
+  // Check for the correct number of arguments
+  if (argc != 2) {
+    fprintf(stderr, "Usage: enc_server listening_port\n");
+    exit(1);
+  }
+
+  // Get the listening port
+  int listening_port = atoi(argv[1]);
+
+  // Create a socket
+  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_fd == -1) {
+    perror("socket");
+    exit(1);
+  }
+
+  // Bind the socket to the listening port
+  struct sockaddr_in address;
+  memset(&address, 0, sizeof(address));
+  address.sin_family = AF_INET;
+  address.sin_port = htons(listening_port);
+  address.sin_addr.s_addr = INADDR_ANY;
+  int bind_result = bind(socket_fd, (struct sockaddr *)&address, sizeof(address));
+  if (bind_result == -1) {
+    perror("bind");
+    exit(1);
+  }
+
+  // Listen for connections
+  listen(socket_fd, MAX_CONNECTIONS);
+
+  while (1) {
+    // Accept a connection
+    int client_fd = accept(socket_fd, NULL, NULL);
+    if (client_fd == -1) {
+      perror("accept");
+      continue;
     }
 
-    int listening_port = atoi(argv[1]);                                             // Create socket
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        perror("Error creating socket");
-        return 1;
+    // Create a child process to handle the connection
+    pid_t pid = fork();
+    if (pid == 0) {
+      // This is the child process
+      close(socket_fd); // Close the listening socket
+
+      // Receive the plaintext and key from the client
+      char plaintext[1024];
+      char key[1024];
+      int bytes_received = recv(client_fd, plaintext, sizeof(plaintext), 0);
+      if (bytes_received == -1) {
+        perror("recv");
+        exit(1);
+      }
+      bytes_received = recv(client_fd, key, sizeof(key), 0);
+      if (bytes_received == -1) {
+        perror("recv");
+        exit(1);
+      }
+
+      // Encrypt the plaintext with the key
+      char ciphertext[1024];
+      for (int i = 0; i < bytes_received; i++) {
+        ciphertext[i] = plaintext[i] ^ key[i];
+      }
+
+      // Send the ciphertext back to the client
+      bytes_sent = send(client_fd, ciphertext, sizeof(ciphertext), 0);
+      if (bytes_sent == -1) {
+        perror("send");
+        exit(1);
+      }
+
+      // Close the connection
+      close(client_fd);
+      exit(0);
+    } else if (pid < 0) {
+      perror("fork");
+      continue;
     }
+  }
 
-    struct sockaddr_in server_addr;                                                 // Set up sockaddr_in structure
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(listening_port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {     // Bind socket to the specified port
-        perror("Error binding");
-        return 1;
-    }
-
-    if (listen(sockfd, 5) == -1) {                                                      // Listen for incoming connections
-        perror("Error listening");
-        return 1;
-    }
-
-    while (1) {                                                                         // Accept connections and serve clients
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        int client_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_len);
-        if (client_sockfd == -1) {
-            perror("Error accepting connection");
-            continue;
-        }
-
-        pid_t child_pid = fork();                                                       // Fork a child process to handle the client
-        if (child_pid == -1) {
-            perror("Error forking");
-            close(client_sockfd);
-            continue;
-        }
-
-        if (child_pid == 0) { 
-            close(sockfd);
-            char plaintext[512];
-            char key[512];
-            ssize_t plaintext_len = recv(client_sockfd, plaintext, sizeof(plaintext), 0);
-            ssize_t key_len = recv(client_sockfd, key, sizeof(key), 0);
-            if (plaintext_len == -1 || key_len == -1) {
-                perror("Error receiving data");
-                close(client_sockfd);
-                exit(1);
-            }
-
-            char ciphertext[512];
-            performEncryption(plaintext, key, ciphertext);
-
-            ssize_t sent_bytes = send(client_sockfd, ciphertext, strlen(ciphertext), 0);
-            if (sent_bytes == -1) {
-                perror("Error sending data");
-                close(client_sockfd);
-                exit(1);
-            }
-            close(client_sockfd);
-            exit(0);
-        } else { 
-            close(client_sockfd);
-        }
-    }
-    close(sockfd);
-    return 0;
+  return 0;
 }
