@@ -18,13 +18,13 @@ int main(int argc, char *argv[]) {
   char *ciphertext_file_name = argv[1];
   char *key_file_name = argv[2];
   int port_number = atoi(argv[3]);
-  FILE *ciphertext_file = fopen(ciphertext_file_name, "r");
+	FILE *ciphertext_file = fopen("ciphertext.txt", "r");
   if (ciphertext_file == NULL) {
     fprintf(stderr, "Could not open ciphertext file: %s\n", ciphertext_file_name);
     exit(1);
   }
 
-  FILE *key_file = fopen(key_file_name, "r");
+	FILE *key_file = fopen("key.txt", "r");
   if (key_file == NULL) {
     fprintf(stderr, "Could not open key file: %s\n", key_file_name);
     exit(1);
