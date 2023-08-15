@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <errno.h>
 
 int main() {
   int socket_fd;
