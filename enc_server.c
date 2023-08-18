@@ -11,7 +11,13 @@
 char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 char *input_buffer, *key_buffer, *enc_output_buffer;
 
-void catch_child_signal(int signo);
+void catch_child_signal(int signo){
+    pid_t child_pid = 0;
+    do {
+        int child_ret;
+        child_pid = waitpid(-1, &child_ret, WNOHANG);
+    } while (child_pid > 0);
+}
 
 int main(int argc, char *argv[])
 {
