@@ -8,7 +8,10 @@
 #include <netdb.h>
 #include <sys/stat.h>
 
+// The characters used for encryption/decryption
 char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+
+// Buffers for holding text, key, and encrypted messages
 char *text_buffer, *key_buffer, *enc_buffer;
 int text_size, key_size;
 
@@ -17,6 +20,7 @@ int main(int argc, char *argv[])
     int socket_fd, port_number, chars_written, chars_read;
     struct sockaddr_in server_address;
 
+    // Check command line arguments
     if (argc < 4)
     {
         fprintf(stderr, "USAGE: %s plaintext keytext port\n", argv[0]);
@@ -27,6 +31,7 @@ int main(int argc, char *argv[])
     struct stat text_stat;
     struct stat key_stat;
 
+    // Get file sizes for text and key files
     stat(argv[1], &text_stat);
     stat(argv[2], &key_stat);
     text_size = text_stat.st_size;
@@ -34,26 +39,30 @@ int main(int argc, char *argv[])
     FILE *text_file = fopen(argv[1], "r");
     FILE *key_file = fopen(argv[2], "r");
 
+    // Error handling for file open
     if (text_file == NULL || key_file == NULL)
     {
         fprintf(stderr, "Error: Cannot open files\n");
         exit(1);
     }
 
+    // Allocate memory for text and key buffers
     text_buffer = (char *)calloc(text_size + 1, sizeof(char));
     key_buffer = (char *)calloc(key_size + 1, sizeof(char));
     memset(text_buffer, '\0', text_size);
     memset(key_buffer, '\0', key_size);
 
+    // Read text and key data into buffers
     fgets(text_buffer, text_size, text_file);
     fgets(key_buffer, key_size, key_file);
     fclose(text_file);
     fclose(key_file);
 
+    // Get actual sizes of text and key data
     text_size = strlen(text_buffer);
     key_size = strlen(key_buffer);
 
-    // Check characters and sizes
+    // Check if key is shorter than text
     if (text_size > key_size)
     {
         fprintf(stderr, "Error: key is too short\n");
@@ -63,6 +72,7 @@ int main(int argc, char *argv[])
     text_buffer[text_size] = '\0';
     key_buffer[key_size] = '\0';
 
+    // Check for invalid characters in text and key
     for (int i = 0; i < text_size; ++i)
     {
         if (strchr(key_chars, text_buffer[i]) == NULL)
@@ -80,7 +90,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Create socket
+    // Create a socket for communication
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0)
     {
@@ -93,6 +103,7 @@ int main(int argc, char *argv[])
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(argv[3]));
 
+    // Get host information
     struct hostent *hostInfo = gethostbyname("localhost");
     if (hostInfo == NULL)
     {
@@ -101,15 +112,15 @@ int main(int argc, char *argv[])
     }
     memcpy((char *)&server_address.sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
 
-    // Connect to server
+    // Connect to the server
     if (connect(socket_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     {
         fprintf(stderr, "CLIENT: Error connecting\n");
         exit(2);
     }
 
-    // Initial contact
-    int respons;
+    // Initial contact with the server
+    int response;
     char name[] = "enc_client\0";
     if (send(socket_fd, name, strlen(name), 0) < 0)
     {
@@ -117,13 +128,14 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    if (recv(socket_fd, &respons, sizeof(respons), 0) < 0)
+    // Receive response from the server
+    if (recv(socket_fd, &response, sizeof(response), 0) < 0)
     {
         fprintf(stderr, "Client: Error receiving initial message from server\n");
         exit(2);
     }
 
-    // Send text and key messages
+    // Send text and key messages to the server
     if (send(socket_fd, &text_size, sizeof(text_size), 0) < 0 || send(socket_fd, text_buffer, text_size, 0) < 0)
     {
         fprintf(stderr, "Client: Error sending text message to server\n");
@@ -136,7 +148,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    // Receive encrypted message
+    // Receive encrypted message from the server
     int enc_length, total_received = 0, received, index = 0;
     if (recv(socket_fd, &enc_length, sizeof(enc_length), 0) < 0)
     {
@@ -149,6 +161,7 @@ int main(int argc, char *argv[])
     int is_done = 0;
     int data_size;
 
+    // Receive the encrypted message data in chunks
     while (!is_done)
     {
         if (enc_length - total_received >= 5000)
@@ -173,10 +186,10 @@ int main(int argc, char *argv[])
         index += received;
     }
 
-    // Print encrypted message
+    // Print the encrypted message
     printf("%s\n", enc_buffer);
 
-    // Clean up
+    // Clean up and free allocated memory
     close(socket_fd);
     free(text_buffer);
     free(key_buffer);
@@ -184,4 +197,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
