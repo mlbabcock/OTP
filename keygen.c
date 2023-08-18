@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   srand((unsigned int)time(NULL));
   int key_length = atoi(argv[1]);
   char *key_string = calloc(key_length + 1, sizeof(char));
-  memset(key_string, '\0', key_length + 1;
+  memset(key_string, '\0', key_length + 1);
 
   for (int i = 0; i < key_length; i++) {
     key[i] = key_chars[rand() % strlen(key_chars)];
