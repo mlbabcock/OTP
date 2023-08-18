@@ -8,14 +8,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-// The characters used for encryption/decryption
 char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
-
-// Buffers for holding input, key, and encrypted output messages
+// Declare buffers for input, key, and encrypted output
 char *input_buffer, *key_buffer, *enc_output_buffer;
 
-// Signal handler to reap child processes
-void catch_child_signal(int signo) {
+// Signal handler function for catching child termination
+void catch_child_signal(int signo){
     pid_t child_pid = 0;
     do {
         int child_ret;
@@ -23,11 +21,13 @@ void catch_child_signal(int signo) {
     } while (child_pid > 0);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int connect_socket, chars_read;
     struct sockaddr_in server_address, client_address;
     socklen_t sizeOfClientInfo = sizeof(client_address);
 
+    // Set up signal handling for child termination
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = catch_child_signal;
@@ -35,69 +35,91 @@ int main(int argc, char *argv[]) {
     action.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &action, NULL);
 
-    if (argc < 2) {
+    // Check for correct number of command-line arguments
+    if (argc < 2)
+    {
         fprintf(stderr, "USAGE: %s port\n", argv[0]);
         exit(1);
     }
 
+    // Create a socket for listening
     int listen_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_socket < 0) {
+    if (listen_socket < 0)
+    {
         fprintf(stderr, "Server: Error opening socket");
         exit(2);
     }
 
+    // Set up server address structure
     memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(atoi(argv[1]));
     server_address.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(listen_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+    // Bind the socket to the server address
+    if (bind(listen_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
+    {
         fprintf(stderr, "Server: Error on binding\n");
         exit(2);
     }
 
+    // Start listening for incoming connections
     listen(listen_socket, 5);
 
-    while (1) {
+    while (1)
+    {
+        // Accept incoming connection
         connect_socket = accept(listen_socket, (struct sockaddr *)&client_address, &sizeOfClientInfo);
-        if (connect_socket < 0) {
+        if (connect_socket < 0)
+        {
             fprintf(stderr, "Server: Error on accept\n");
             exit(2);
         }
 
+        // Fork a child process to handle the client
         pid_t spawnPid;
         spawnPid = fork();
 
-        switch (spawnPid) {
+        switch (spawnPid)
+        {
         case -1:
             fprintf(stderr, "Server: Error fork() failed\n");
             exit(1);
             break;
         case 0:
+            // Child process
             close(listen_socket);
             
+            // Buffer to receive client's request type
             char recv_name[256];
             int reply;
             memset(recv_name, '\0', 256);
             
-            // Receive initial message to identify client
-            if (recv(connect_socket, recv_name, 255, 0) < 0) {
+            // Receive input message and determine if encryption is requested
+            if (recv(connect_socket, recv_name, 255, 0) < 0)
+            {
                 fprintf(stderr, "Server: Error reading text_length from client\n");
                 exit(2);
             }
             
-            if (strcmp(recv_name, "enc_client\0") == 0) {
+            // Determine if the client is requesting encryption
+            if (strcmp(recv_name, "enc_lient\0") == 0) 
+            {
                 reply = 1;
-            } else {
+            } 
+            else {
                 reply = 0;
             }
             
-            if (send(connect_socket, &reply, sizeof(reply), 0)) {
+            // Send the reply to the client
+            if (send(connect_socket, &reply, sizeof(reply), 0))
+            {
                 fprintf(stderr, "Server: Error failed to send message to client\n");
                 exit(2);
             }
             
             int text_length, key_length;
+            // Allocate memory for input_buffer and initialize it
             input_buffer = (char *)calloc(text_length + 1, sizeof(char));
             memset(input_buffer, '\0', text_length + 1);
 
@@ -106,31 +128,41 @@ int main(int argc, char *argv[]) {
             int is_done = 0;
             int data_size;
 
-            while (!is_done) {
-                if (text_length - total_received >= 5000) {
+            while (!is_done)
+            {
+                // Determine the data size to receive
+                if (text_length - total_received >= 5000)
+                {
                     data_size = 5000;
-                } else {
+                }
+                else
+                {
                     data_size = text_length - total_received;
                 }
 
+                // Receive data from the client
                 received = recv(connect_socket, input_buffer + index, data_size, 0);
-                if (received < 0) {
+                if (received < 0)
+                {
                     fprintf(stderr, "Server: Error reading input_buffer from client\n");
                     exit(2);
                 }
                 total_received += received;
-                if (total_received >= text_length) {
+                if (total_received >= text_length)
+                {
                     is_done = 1;
                 }
                 index += received;
             }
 
             // Receive key_length
-            if (recv(connect_socket, &key_length, sizeof(key_length), 0) < 0) {
+            if (recv(connect_socket, &key_length, sizeof(key_length), 0) < 0)
+            {
                 fprintf(stderr, "Server: Error reading key_length from client\n");
                 exit(2);
             }
 
+            // Allocate memory for key_buffer and initialize it
             key_buffer = (char *)calloc(key_length + 1, sizeof(char));
             memset(key_buffer, '\0', key_length + 1);
 
@@ -139,21 +171,29 @@ int main(int argc, char *argv[]) {
             index = 0;
             is_done = 0;
 
-            while (!is_done) {
-                if (key_length - total_received >= 5000) {
+            while (!is_done)
+            {
+                // Determine the data size to receive
+                if (key_length - total_received >= 5000)
+                {
                     data_size = 5000;
-                } else {
+                }
+                else
+                {
                     data_size = key_length - total_received;
                 }
-
+                
+                // Receive data from the client
                 received = recv(connect_socket, key_buffer + index, data_size, 0);
-                if (received < 0) {
+                if (received < 0)
+                {
                     fprintf(stderr, "Server: Error reading key_buffer from client\n");
                     exit(2);
                 }
 
                 total_received += received;
-                if (total_received >= key_length) {
+                if (total_received >= key_length)
+                {
                     is_done = 1;
                 }
                 index += received;
@@ -161,22 +201,33 @@ int main(int argc, char *argv[]) {
 
             // Encrypt the message
             int text_size = strlen(input_buffer);
+
+            // Allocate memory for the encrypted output buffer and initialize it
             enc_output_buffer = (char *)calloc(text_size + 1, sizeof(char));
             memset(enc_output_buffer, '\0', text_size + 1);
 
-            for (int i = 0; i < text_size; ++i) {
+            // Iterate through each character in the input and perform encryption
+            for (int i = 0; i < text_size; ++i)
+            {
+                // Find the index of the current input character in key_chars
                 int text_index = strchr(key_chars, input_buffer[i]) - key_chars, key_index = strchr(key_chars, key_buffer[i]) - key_chars;
+
+                // Calculate the encrypted character index using the key
+                // Modulo operation ensures circular wrapping around key_chars
                 enc_output_buffer[i] = key_chars[(text_index + key_index) % strlen(key_chars)];
             }
 
             // Send encrypted result to client
             int enc_size = strlen(enc_output_buffer);
-            if (send(connect_socket, &enc_size, sizeof(enc_size), 0) < 0) {
+            if (send(connect_socket, &enc_size, sizeof(enc_size), 0) < 0)
+            {
                 fprintf(stderr, "Server: Error sending encrypted size to client\n");
                 exit(2);
             }
-
-            if (send(connect_socket, enc_output_buffer, enc_size, 0) < 0) {
+            
+            // Send the encrypted message itself to the client
+            if (send(connect_socket, enc_output_buffer, enc_size, 0) < 0)
+            {
                 fprintf(stderr, "Server: Error sending encrypted message to client\n");
                 exit(2);
             }
@@ -185,10 +236,13 @@ int main(int argc, char *argv[]) {
             exit(0);
             break;
         default:
+        // Parent process, continue listening for connections
             break;
         }
+        // Close the connection in the parent process
         close(connect_socket);
     }
+    // Close the listening socket and exit
     close(listen_socket);
     return 0;
 }
