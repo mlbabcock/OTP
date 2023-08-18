@@ -2,19 +2,25 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
+
+char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Usage: keygen keylength\n");
-    exit(1);
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s keygen keylength\n", argv[0]);
+    return EXIT_FAILURE;
+  }
+  srand((unsigned int)time(NULL));
+  int key_length = atoi(argv[1]);
+  char *key_string = calloc(key_length + 1, sizeof(char);
+  memset(key_string, '\0', key_length + 1;
+
+  for (int i = 0; i < key_length; i++) {
+    key[i] = key_chars[rand() % strlen(key_chars)];
   }
 
-  int key_length = atoi(argv[1]);
-  char key[key_length + 1];
-  for (int i = 0; i < key_length; i++) {
-    key[i] = 65 + rand() % 27;
-  }
-  key[key_length] = '\n';
-  printf("%s", key);
-  return 0;
+  fprintf(stdout, "%s\n", key_string);
+  fflush(stdout);
+  return EXIT_SUCCESS; 
 }
