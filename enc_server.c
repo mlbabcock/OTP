@@ -103,7 +103,8 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Server: Error failed to send message to client\n");
                 exit(2);
             }
-                
+            
+            int text_length, key_length;
             input_buffer = (char *)calloc(text_length + 1, sizeof(char));
             memset(input_buffer, '\0', text_length + 1);
 
