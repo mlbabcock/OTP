@@ -78,21 +78,32 @@ int main(int argc, char *argv[])
             break;
         case 0:
             close(listen_socket);
-
-            if (initial_contact(connect_socket) == 0)
-            {
-                close(connect_socket);
-                exit(2);
-            }
-
+            
+            char recv_name[256];
+            int reply;
+            memset(recv_name, '\0', 256);
+            
             // Receive input message and key message
-            int text_length, key_length;
-            if (recv(connect_socket, &text_length, sizeof(text_length), 0) < 0)
+            if (recv(connect_socket, recv_name, 255, 0) < 0)
             {
                 fprintf(stderr, "Server: Error reading text_length from client\n");
                 exit(2);
             }
-
+            
+            if (strcmp(recv_name, "enc_lient\0") == 0) 
+            {
+                reply = 1;
+            } 
+            else {
+                reply = 0;
+            }
+            
+            if (send(connect_socket, &reply, sizeof(reply), 0))
+            {
+                fprintf(stderr, "Server: Error failed to send message to client\n");
+                exit(2);
+            }
+                
             input_buffer = (char *)calloc(text_length + 1, sizeof(char));
             memset(input_buffer, '\0', text_length + 1);
 
