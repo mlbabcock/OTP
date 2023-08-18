@@ -11,6 +11,8 @@
 char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 char *input_buffer, *key_buffer, *enc_output_buffer;
 
+void catch_child_signal(int signo);
+
 int main(int argc, char *argv[])
 {
     int connect_socket, chars_read;
