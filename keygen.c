@@ -1,41 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
-// The characters used for generating the key
 char key_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
-int main(int argc, char *argv[]) {
-  // Check for correct number of command-line arguments
-  if (argc < 2) {
-    fprintf(stderr, "Usage: %s keygen keylength\n", argv[0]);
-    return EXIT_FAILURE;
-  }
+// Function to generate a random key of a specified length
+void generate_key(int length, char *str)
+{
+    for (int i = 0; i < length; ++i)
+    {
+        // Generate a random index within the key_chars array and assign the character at that index to the key
+        str[i] = key_chars[rand() % strlen(key_chars)];
+    }
+}
 
-  // Seed the random number generator using current time
-  srand((unsigned int)time(NULL));
+int main(int argc, char *argv[])
+{
+    // Check if the correct number of command-line arguments is provided
+    if (argc < 2)
+    {
+        fprintf(stderr, "USAGE: %s keylength\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-  // Parse the desired key length from command-line argument
-  int key_length = atoi(argv[1]);
+    srand((unsigned int)time(NULL));                                // Seed the random number generator using the current time
+    int key_length = atoi(argv[1]);                                 // Convert the second command-line argument to an integer (key length)
 
-  // Allocate memory for the key string and initialize to null characters
-  char *key_string = calloc(key_length + 1, sizeof(char));
-  memset(key_string, '\0', key_length + 1);
+    // Allocate memory for the key string, and initialize it with null characters
+    char *key_string = calloc(key_length + 1, sizeof(char));
+    memset(key_string, '\0', key_length + 1);
+    generate_key(key_length, key_string);                           // Generate a random key of the specified length
 
-  // Generate the random key string
-  for (int i = 0; i < key_length; i++) {
-    key_string[i] = key_chars[rand() % strlen(key_chars)]; // Choose a random character from key_chars
-  }
+    fprintf(stdout, "%s\n", key_string);                            // Print the generated key to the standard output
+    fflush(stdout);                                                 // Free the dynamically allocated memory for the key string
 
-  // Print the generated key to standard output
-  fprintf(stdout, "%s\n", key_string);
-
-  // Flush the standard output to ensure the message is sent
-  fflush(stdout);
-
-  // Clean up allocated memory and exit
-  free(key_string);
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
